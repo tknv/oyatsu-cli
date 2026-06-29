@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Watanabe Takanobu
+# SPDX-License-Identifier: GPL-3.0-only
+[package]
+name = "oyatsu"
+version = "0.1.0"
+description = "Seasonal time system clock"
+authors = ["Watanabe Takanobu <rreedd555@gmail.com>"]
+categories = ["command-line-utilities"]
+edition = "2024"
+readme = "README.md"
+homepage = "https://github.com/tknv/oyatsu"
+license = "GPL-3.0-only"
+repository = "https://github.com/tknv/oyatsu"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"
