@@ -7,6 +7,7 @@ description = "Seasonal time system clock"
 authors = ["Watanabe Takanobu <rreedd555@gmail.com>"]
 categories = ["command-line-utilities"]
 edition = "2024"
+rust-version = "1.86"
 readme = "README.md"
 homepage = "https://github.com/tknv/oyatsu"
 license = "GPL-3.0-only"
