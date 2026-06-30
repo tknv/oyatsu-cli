@@ -42,6 +42,10 @@ fn parse_args() -> Result<Args, String> {
                 let v = args.next().ok_or("--lang requires a value (ja or en)")?;
                 lang = Some(Lang::from_str(&v)?);
             }
+            "-V" | "--version" => {
+                println!("oyatsu {}", env!("CARGO_PKG_VERSION"));
+                std::process::exit(0);
+            }
             "-h" | "--help" => {
                 print_usage();
                 std::process::exit(0);
@@ -99,6 +103,7 @@ fn print_usage() {
            --lat <latitude>   Latitude  (decimal degrees, N positive)\n\
            --lon <longitude>  Longitude (decimal degrees, E positive)\n\
            --lang <lang>      Output language: ja (default) | en\n\
+           -V, --version      Show version information\n\
            -h, --help         Show this help\n\n\
          Location priority:\n\
            1. --lat / --lon options\n\

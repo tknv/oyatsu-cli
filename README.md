@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/tknv/oyatsu-cli)  
+
 # oyatsu (CLI版)
 
 おやつの時間を把握する為の 
@@ -22,6 +24,8 @@ cargo build --release
 sudo cp target/release/oyatsu /usr/local/bin/oyatsu
 # もしくは
 cp target/release/oyatsu ~/.local/bin/oyatsu
+#　もしくは
+sudo make install
 ```
 
 ## 使い方
@@ -45,7 +49,7 @@ oyatsu
 日の出・日の入り時刻は標準エラー出力に補足として表示されます。
 
 ```sh
-oyatsu 2> /dev/null   # 補足情報を非表示にする
+oyatsu 2&> /dev/null   # 補足情報を非表示にする
 おやつ 令和八年 水無月 未二つ 夏至 丙午
 ```
 
