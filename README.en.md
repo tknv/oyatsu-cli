@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/tknv/oyatsu-cli)  
+
 # oyatsu (CLI Version)
 
 A command-line tool, porting the logic of [Oyatsu (Android Version)](https://github.com/tknv/Oyatsu) to help keep track of "oyatsu" (snack) time.
@@ -11,7 +13,6 @@ Rust (`cargo`) is required.
 
 ```sh
 cargo build --release
-
 ```
 
 The executable file will be created at `target/release/oyatsu`. You can copy it to a location in your `PATH` (e.g., `~/.local/bin` or `/usr/local/bin`) to use it as the `oyatsu` command.
@@ -20,14 +21,14 @@ The executable file will be created at `target/release/oyatsu`. You can copy it 
 sudo cp target/release/oyatsu /usr/local/bin/oyatsu
 # or
 cp target/release/oyatsu ~/.local/bin/oyatsu
-
+# or
+sudo make install
 ```
 
 ## Usage
 
 ```sh
 oyatsu
-
 ```
 
 ```

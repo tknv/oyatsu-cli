@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/tknv/oyatsu-cli)  
+
 # oyatsu (CLI版)
 
 おやつの時間を把握する為の 
@@ -22,6 +24,8 @@ cargo build --release
 sudo cp target/release/oyatsu /usr/local/bin/oyatsu
 # もしくは
 cp target/release/oyatsu ~/.local/bin/oyatsu
+#　もしくは
+sudo make install
 ```
 
 ## 使い方
