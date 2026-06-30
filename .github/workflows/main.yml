@@ -1,0 +1,180 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # タグが打たれたコードに対して release プロファイルでテストを実行
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test --release
+        run: cargo test --release --verbose
+
+  # ソースアーカイブ (.tgz) を作成
+  source-archive:
+    name: Source tarball
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get version
+        id: get_version
+        run: echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+      - name: Create source tarball
+        run: |
+          NAME="$(grep -m1 '^name' Cargo.toml | sed -E 's/name *= *"(.*)"/\1/')"
+          OUT="${NAME}-${{ steps.get_version.outputs.version }}-src.tgz"
+          git archive --format=tar.gz --prefix="${NAME}-${{ steps.get_version.outputs.version }}/" -o "$OUT" HEAD
+          echo "ARCHIVE_PATH=$OUT" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-tarball
+          path: ${{ env.ARCHIVE_PATH }}
+
+  # 現在のコードでビルド可能な各アーキテクチャ向けバイナリをビルド
+  build:
+    name: Build (${{ matrix.target }})
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux (glibc / musl), cross でクロスコンパイル
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            use_cross: false
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            use_cross: true
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            use_cross: true
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            use_cross: true
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+            use_cross: true
+          - target: riscv64gc-unknown-linux-gnu
+            os: ubuntu-latest
+            use_cross: true
+
+          # macOS (Intel / Apple Silicon)
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            use_cross: false
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            use_cross: false
+
+          # Windows (MSVC)
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            use_cross: false
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            use_cross: false
+          - target: i686-pc-windows-msvc
+            os: windows-latest
+            use_cross: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.use_cross
+        run: cargo install cross --git https://github.com/cross-rs/cross --locked
+
+      - name: Build (cross)
+        if: matrix.use_cross
+        run: cross build --release --locked --target ${{ matrix.target }}
+
+      - name: Build (cargo)
+        if: ${{ !matrix.use_cross }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Determine bin name
+        id: bin
+        shell: bash
+        run: |
+          NAME="$(grep -m1 '^name' Cargo.toml | sed -E 's/name *= *"(.*)"/\1/')"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          BIN="${{ steps.bin.outputs.name }}"
+          TARGET="${{ matrix.target }}"
+          VERSION="${GITHUB_REF_NAME}"
+          STAGE="${BIN}-${VERSION}-${TARGET}"
+          mkdir -p "$STAGE"
+          cp "target/${TARGET}/release/${BIN}" "$STAGE/"
+          [ -f README.md ] && cp README.md "$STAGE/" || true
+          [ -f LICENSE ] && cp LICENSE "$STAGE/" || true
+          tar -czf "${STAGE}.tar.gz" "$STAGE"
+          echo "ASSET=${STAGE}.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          BIN="${{ steps.bin.outputs.name }}"
+          TARGET="${{ matrix.target }}"
+          VERSION="${GITHUB_REF_NAME}"
+          STAGE="${BIN}-${VERSION}-${TARGET}"
+          mkdir -p "$STAGE"
+          cp "target/${TARGET}/release/${BIN}.exe" "$STAGE/"
+          [ -f README.md ] && cp README.md "$STAGE/" || true
+          [ -f LICENSE ] && cp LICENSE "$STAGE/" || true
+          7z a "${STAGE}.zip" "$STAGE"
+          echo "ASSET=${STAGE}.zip" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.target }}
+          path: ${{ env.ASSET }}
+
+  # 全てのアーティファクトを集約し GitHub Release を作成
+  release:
+    name: Create Release
+    needs: [build, source-archive]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Show files
+        run: ls -la dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
