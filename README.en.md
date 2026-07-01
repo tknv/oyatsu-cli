@@ -57,7 +57,7 @@ The traditional Japanese time (temporal hour system) calculates sunrise and suns
 Priority order:
 
 1. Values specified with the `-lat` / `-lon` options
-2. `~/.config/oyatsu` (Latitude on the 1st line, Longitude on the 2nd line)
+2. `~/.config/oyatsu` (Latitude on the 1st line, Longitude on the 2nd line) Mac: `~/Library/Application Support/oyatsu`, Win: `%APPDATA%\oyatsu`
 3. If neither is available, Tokyo Station (approx. `35.6895`, `139.6917`) is used as the default.
 
 ```sh

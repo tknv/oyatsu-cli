@@ -65,7 +65,11 @@ Display the version information and exit.
 .SH LOCATION PRIORITY
 1. \-\-lat / \-\-lon options
 .br
-2. ~/.config/oyatsu (line1: latitude, line2: longitude)
+2. ~/.config/oyatsu (line1: latitude, line2: longitude),
+.br
+  PATH
+.br
+    Mac ~/Library/Application Support/oyatsu, Win %APPDATA%\\oyatsu
 .br
 3. Tokyo Station default
 .SH LANGUAGE PRIORITY

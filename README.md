@@ -60,7 +60,7 @@ oyatsu 2&> /dev/null   # 補足情報を非表示にする
 優先順位:
 
 1. `-lat` / `-lon` オプションで指定した値
-2. `~/.config/oyatsu` (1行目に緯度、2行目に経度を記載)
+2. `~/.config/oyatsu` (1行目に緯度、2行目に経度を記載) Mac: `~/Library/Application Support/oyatsu`, Win: `%APPDATA%\oyatsu`
 3. どちらもなければ東京駅 (`35.6895`, `139.6917` 付近) を使用
 
 ```sh
