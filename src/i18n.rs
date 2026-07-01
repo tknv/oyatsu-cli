@@ -140,7 +140,12 @@ pub fn jikoku_en(ja: &str) -> String {
         ("丑", "Ushi"),
         ("寅", "Tora"),
     ];
-    const KOSU_MAP: &[(&str, &str)] = &[("一つ", "1"), ("二つ", "2"), ("三つ", "3"), ("四つ", "4")];
+    const KOSU_MAP: &[(&str, &str)] = &[
+        ("一つ", "Hitotsu"),
+        ("二つ", "Futatsu"),
+        ("三つ", "Mitsu"),
+        ("四つ", "Yotsu"),
+    ];
 
     for &(ja_k, en_k) in JIKOKU_MAP {
         if let Some(rest) = ja.strip_prefix(ja_k) {
@@ -203,18 +208,18 @@ pub fn eto_en(ja: &str) -> String {
         ("癸", "Mizunoto"),
     ];
     const BRANCH_MAP: &[(&str, &str)] = &[
-        ("子", "Rat"),
-        ("丑", "Ox"),
-        ("寅", "Tiger"),
-        ("卯", "Rabbit"),
-        ("辰", "Dragon"),
-        ("巳", "Snake"),
-        ("午", "Horse"),
-        ("未", "Goat"),
-        ("申", "Monkey"),
-        ("酉", "Rooster"),
-        ("戌", "Dog"),
-        ("亥", "Pig"),
+        ("子", "Ne"),
+        ("丑", "Ushi"),
+        ("寅", "Tora"),
+        ("卯", "U"),
+        ("辰", "Tatsu"),
+        ("巳", "Mi"),
+        ("午", "Uma"),
+        ("未", "Hitsuji"),
+        ("申", "Saru"),
+        ("酉", "Tori"),
+        ("戌", "Inu"),
+        ("亥", "I"),
     ];
 
     let mut result = ja.to_string();
@@ -324,10 +329,10 @@ mod tests {
 
     #[test]
     fn test_jikoku_en() {
-        assert_eq!(jikoku_en("未三つ"), "Hitsuji 3");
-        assert_eq!(jikoku_en("午一つ"), "Uma 1");
-        assert_eq!(jikoku_en("子四つ"), "Ne 4");
-        assert_eq!(jikoku_en("卯二つ"), "U 2");
+        assert_eq!(jikoku_en("未三つ"), "Hitsuji Mitsu");
+        assert_eq!(jikoku_en("午一つ"), "Uma Hitotsu");
+        assert_eq!(jikoku_en("子四つ"), "Ne Yotsu");
+        assert_eq!(jikoku_en("卯二つ"), "U Futatsu");
     }
 
     #[test]
@@ -340,9 +345,9 @@ mod tests {
 
     #[test]
     fn test_eto_en() {
-        assert_eq!(eto_en("丙午"), "Hinoe-Horse");
-        assert_eq!(eto_en("甲子"), "Kinoe-Rat");
-        assert_eq!(eto_en("癸亥"), "Mizunoto-Pig");
+        assert_eq!(eto_en("丙午"), "Hinoe-Uma");
+        assert_eq!(eto_en("甲子"), "Kinoe-Ne");
+        assert_eq!(eto_en("癸亥"), "Mizunoto-I");
     }
 
     #[test]
