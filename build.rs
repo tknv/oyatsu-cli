@@ -49,6 +49,8 @@ A command-line tool for tracking snack time.
 .IP \(bu 2
 二十四節気 \- 24 solar terms
 .IP \(bu 2
+雑節 \- Other season marks
+.IP \(bu 2
 干支 \- Chinese zodiac signs
 .IP \(bu 2
 おやつ時通知 \- Notice Oyatsu-doki

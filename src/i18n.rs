@@ -120,6 +120,51 @@ pub fn month_name_en(ja: &str) -> &'static str {
     }
 }
 
+// ─── 祝日名 → 英語 ───────────────────────────────────────────
+
+/// 祝日名を英語表記にする。未知の名称はそのまま返す。
+pub fn holiday_en(ja: &str) -> String {
+    const HOLIDAY_MAP: &[(&str, &str)] = &[
+        ("四方節", "Shihosetsu (New Year's Day)"),
+        ("成人の日", "Coming of Age Day"),
+        ("紀元節", "National Foundation Day"),
+        ("天長節", "Emperor's Birthday"),
+        ("春季皇霊祭", "Vernal Equinox Day"),
+        ("昭和の日", "Showa Day"),
+        ("憲法記念日", "Constitution Memorial Day"),
+        ("みどりの日", "Greenery Day"),
+        ("こどもの日", "Children's Day"),
+        ("海の日", "Marine Day"),
+        ("山の日", "Mountain Day"),
+        ("敬老の日", "Respect for the Aged Day"),
+        ("秋季皇霊祭", "Autumnal Equinox Day"),
+        ("スポーツの日", "Sports Day"),
+        ("明治節", "Meiji Day"),
+        ("新嘗祭", "Niiname-sai (Harvest Festival)"),
+    ];
+
+    for &(ja_name, en_name) in HOLIDAY_MAP {
+        if ja_name == ja {
+            return en_name.to_string();
+        }
+    }
+    ja.to_string()
+}
+
+// ─── 日付 → 英語 (序数) ──────────────────────────────────────
+
+/// 日 (1〜31) を英語の序数表記にする (例: 9 → "9th", 21 → "21st")。
+pub fn ordinal_day_en(day: u32) -> String {
+    let suffix = match (day % 10, day % 100) {
+        (1, 11) | (2, 12) | (3, 13) => "th",
+        (1, _) => "st",
+        (2, _) => "nd",
+        (3, _) => "rd",
+        _ => "th",
+    };
+    format!("{day}{suffix}")
+}
+
 // ─── 和時計 → 英語 ───────────────────────────────────────────
 
 /// 和時計ラベルを英語に変換する。
@@ -192,6 +237,22 @@ pub fn solar_term_en(ja: &str) -> &'static str {
     }
 }
 
+// ─── 雑節 → 英語 ───────────────────────────────────────
+
+pub fn zassetsu_en(ja: &str) -> &'static str {
+    match ja {
+        "節分" => "Setsubun",
+        "八十八夜" => "88th Night", // Hachiju-hachiya としても可
+        "二百十日" => "210th Day",  // Nihyakutoka としても可
+        "彼岸入り" => "Start of Higan",
+        "土用入り" => "Start of Doyo",
+        "入梅" => "Nyubai",
+        "半夏生" => "Hangesho",
+        "社日" => "Shanichi",
+        _ => "",
+    }
+}
+
 // ─── 干支 → 英語 ─────────────────────────────────────────────
 
 pub fn eto_en(ja: &str) -> String {
@@ -241,51 +302,6 @@ pub fn eto_en(ja: &str) -> String {
         result = format!("{en_s}-{en_b}");
     }
     result
-}
-
-// ─── 祝日名 → 英語 ───────────────────────────────────────────
-
-/// 祝日名を英語表記にする。未知の名称はそのまま返す。
-pub fn holiday_en(ja: &str) -> String {
-    const HOLIDAY_MAP: &[(&str, &str)] = &[
-        ("四方節", "Shihosetsu (New Year's Day)"),
-        ("成人の日", "Coming of Age Day"),
-        ("紀元節", "National Foundation Day"),
-        ("天長節", "Emperor's Birthday"),
-        ("春季皇霊祭", "Vernal Equinox Day"),
-        ("昭和の日", "Showa Day"),
-        ("憲法記念日", "Constitution Memorial Day"),
-        ("みどりの日", "Greenery Day"),
-        ("こどもの日", "Children's Day"),
-        ("海の日", "Marine Day"),
-        ("山の日", "Mountain Day"),
-        ("敬老の日", "Respect for the Aged Day"),
-        ("秋季皇霊祭", "Autumnal Equinox Day"),
-        ("スポーツの日", "Sports Day"),
-        ("明治節", "Meiji Day"),
-        ("新嘗祭", "Niiname-sai (Harvest Festival)"),
-    ];
-
-    for &(ja_name, en_name) in HOLIDAY_MAP {
-        if ja_name == ja {
-            return en_name.to_string();
-        }
-    }
-    ja.to_string()
-}
-
-// ─── 日付 → 英語 (序数) ──────────────────────────────────────
-
-/// 日 (1〜31) を英語の序数表記にする (例: 9 → "9th", 21 → "21st")。
-pub fn ordinal_day_en(day: u32) -> String {
-    let suffix = match (day % 10, day % 100) {
-        (1, 11) | (2, 12) | (3, 13) => "th",
-        (1, _) => "st",
-        (2, _) => "nd",
-        (3, _) => "rd",
-        _ => "th",
-    };
-    format!("{day}{suffix}")
 }
 
 // ─── 固定テキスト ─────────────────────────────────────────────
@@ -428,5 +444,53 @@ mod tests {
         assert_eq!(Lang::from_str("EN").unwrap(), Lang::En);
         assert_eq!(Lang::from_str("Japanese").unwrap(), Lang::Ja);
         assert!(Lang::from_str("fr").is_err());
+    }
+
+    // ── 雑節 → 英語 ───────────────────────────────────────────
+
+    #[test]
+    fn test_zassetsu_en() {
+        assert_eq!(zassetsu_en("節分"), "Setsubun");
+        assert_eq!(zassetsu_en("八十八夜"), "88th Night");
+        assert_eq!(zassetsu_en("二百十日"), "210th Day");
+        assert_eq!(zassetsu_en("彼岸入り"), "Start of Higan");
+        assert_eq!(zassetsu_en("土用入り"), "Start of Doyo");
+        assert_eq!(zassetsu_en("入梅"), "Nyubai");
+        assert_eq!(zassetsu_en("半夏生"), "Hangesho");
+        assert_eq!(zassetsu_en("社日"), "Shanichi");
+    }
+
+    // 未知の雑節名は空文字列を返す (koyomi::zassetsu が返す名称は
+    // すべて上記8種のいずれかなので、通常このケースには入らない)
+    #[test]
+    fn test_zassetsu_en_unknown_returns_empty() {
+        assert_eq!(zassetsu_en("謎の雑節"), "");
+        assert_eq!(zassetsu_en(""), "");
+        // 二十四節気の名称を誤って渡した場合も雑節としては未知
+        assert_eq!(zassetsu_en("夏至"), "");
+    }
+
+    // koyomi::zassetsu() が実際に返しうる全ての名称が、
+    // 空文字列 (未対応) にならず翻訳されることを保証する回帰テスト。
+    // (zassetsu 側に新しい雑節が追加された際、翻訳漏れがあればここで失敗する)
+    #[test]
+    fn test_zassetsu_en_covers_all_known_names() {
+        const ALL_ZASSETSU_NAMES: [&str; 8] = [
+            "節分",
+            "八十八夜",
+            "二百十日",
+            "彼岸入り",
+            "土用入り",
+            "入梅",
+            "半夏生",
+            "社日",
+        ];
+        for name in ALL_ZASSETSU_NAMES {
+            let en = zassetsu_en(name);
+            assert!(
+                !en.is_empty(),
+                "「{name}」の英語訳が未対応です (zassetsu_en が空文字列を返した)"
+            );
+        }
     }
 }

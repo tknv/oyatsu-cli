@@ -9,7 +9,7 @@ mod i18n;
 mod koyomi;
 mod sunrise;
 
-use chrono::{Datelike, Local};
+use chrono::Datelike;
 use i18n::Lang;
 
 const DEFAULT_LATITUDE: f64 = 35.681444600642514;
@@ -137,6 +137,20 @@ fn print_usage() {
     );
 }
 
+// ─── テスト 中今 ───────────────────────────────────────────────
+//
+// OYATSU_NOW="2026-04-18 15:23:00" ./target/release/oyatsu
+
+fn now() -> chrono::DateTime<chrono::Local> {
+    if let Ok(t) = std::env::var("OYATSU_NOW") {
+        // NaiveDateTime形式の文字列を解析し、Localタイムゾーンに割り当てる
+        if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(&t, "%Y-%m-%d %H:%M:%S") {
+            return ndt.and_local_timezone(chrono::Local).unwrap();
+        }
+    }
+    chrono::Local::now()
+}
+
 // ─── メイン ──────────────────────────────────────────────────
 
 fn main() {
@@ -159,13 +173,14 @@ fn main() {
         std::process::exit(1);
     }
 
-    let now = Local::now();
+    let now = now();
     let today = now.date_naive();
 
     // ── 暦情報 ──
     let ja_year = koyomi::japanese_year(today);
     let ja_month = koyomi::japanese_month_name(today);
     let ja_term = koyomi::solar_term(today);
+    let ja_zassetsu = koyomi::zassetsu(today);
     let ja_eto = koyomi::sixty_kanji_cycle(today);
 
     // ── 日付・休日 ──
@@ -212,8 +227,9 @@ fn main() {
                     } else {
                         String::new()
                     };
+                    let zassetsu_str = ja_zassetsu.map(|z| format!(" [{z}]")).unwrap_or_default();
                     format!(
-                        "{prefix}{ja_year} {ja_month} {date_display_ja} {} {ja_term} {ja_eto}",
+                        "{prefix}{ja_year} {ja_month} {date_display_ja} {} {ja_term}{zassetsu_str} {ja_eto}",
                         jt.label
                     )
                 }
@@ -222,13 +238,18 @@ fn main() {
                     let month = i18n::month_name_en(ja_month);
                     let jikoku = i18n::jikoku_en(&jt.label);
                     let term = i18n::solar_term_en(ja_term);
+                    let zassetsu_str = ja_zassetsu
+                        .map(|z| format!(" [{}]", i18n::zassetsu_en(z)))
+                        .unwrap_or_default();
                     let eto = i18n::eto_en(&ja_eto);
                     let prefix = if jt.is_hitsuji_time {
-                        format!("{} / ", txt.oyatsu)
+                        format!("{} ", txt.oyatsu)
                     } else {
                         String::new()
                     };
-                    format!("{prefix}{era}  {month}  {date_display_en}  {jikoku}  {term}  {eto}")
+                    format!(
+                        "{prefix}{era} {month} {date_display_en} {jikoku} {term}{zassetsu_str} {eto}"
+                    )
                 }
             };
             println!("{output}");

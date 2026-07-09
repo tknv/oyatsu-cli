@@ -4,7 +4,7 @@
 
 A command-line tool, porting the logic of [Oyatsu (Android Version)](https://github.com/tknv/Oyatsu) to help keep track of "oyatsu" (snack) time.
 
-It displays the Japanese calendar year (Wareki), traditional Japanese month names (Wafūgetsu-mei), day, traditional Japanese time (seasonal time clock) / Futei-jiho), the 24 solar terms (Nijūshi-sekki), and the sexagenary cycle (Eto) in your terminal.
+It displays the Japanese calendar year (Wareki), traditional Japanese month names (Wafūgetsu-mei), day, traditional Japanese time (seasonal time clock) / Futei-jiho), the 24 solar terms (Nijūshi-sekki), other season makrs (Zassetsu) and the sexagenary cycle (Eto) in your terminal.
 During the hour of the "Goat" (Hitsuji-no-koku, or Yatsu-doki, which is roughly 13:00 to 15:00 in modern time), the word "おやつ" (Oyatsu) will be prefixed to the output.
 
 ## Build
@@ -39,8 +39,8 @@ Reiwa 8  Minazuki (Jun) 10th I 3  Summer Solstice  Hinoe-Horse
 During snack time (Hour of the Goat):
 
 ```
-Oyatsu (snack time!) Reiwa 8  Minazuki (Jun) 11th Hitsuji 3  Summer Solstice  Hinoe-Horse
-(Sunrise 03:45, Sunset 19:15)
+Oyatsu (snack time!) Reiwa 8 Uzuki (Apr) 17th Hitsuji Mitsu Clear and Bright [Start of Doyo] Hinoe-Uma
+(Sunrise 04:06, Sunset 17:15)
 ```
 
 Sunrise and sunset times are displayed as supplementary information in the standard error output (stderr).

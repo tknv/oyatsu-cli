@@ -60,7 +60,6 @@ pub fn kanji_day(date: NaiveDate) -> String {
 
 // ─── 二十四節気 (天文計算) ────────────────────────────────────
 
-
 /// 二十四節気の名称と対応する太陽視黄経 (λ☉, 度)。
 /// 小寒(λ=285°)を起点に15°刻み。
 const SOLAR_TERMS: [(&str, f64); 24] = [
@@ -377,6 +376,133 @@ pub fn calculate_japanese_time(
     }
 }
 
+// ─── 社日計算ヘルパー ──────────────────────────────────────────
+
+/// 指定した日付の「日の十干」を返す (0:甲, 1:乙, 2:丙, 3:丁, 4:戊, 5:己, 6:庚, 7:辛, 8:壬, 9:癸)
+fn jikkan_of_date(date: NaiveDate) -> i64 {
+    // 0h UT のユリウス日を取得し、0.5 を足して正午のユリウス日(整数)にする
+    let jd_0h = julian_day(date);
+    let jd_12h = (jd_0h + 0.5).round() as i64;
+    // 基準日: 2000年1月1日 (JD=2451545) は「戊(4)」
+    (jd_12h + 9).rem_euclid(10)
+}
+
+/// その年の社日（春社または秋社）を計算する
+fn calc_shanichi(year: i32, is_spring: bool) -> NaiveDate {
+    // 春分(0°) と 秋分(180°) の黄経と概算月日
+    let (lon, m, d) = if is_spring {
+        (0.0, 3, 21)
+    } else {
+        (180.0, 9, 23)
+    };
+
+    // 天文計算による正確な春分・秋分点 (UTC) のユリウス日
+    let approx_date = NaiveDate::from_ymd_opt(year, m, d)
+        .unwrap_or_else(|| NaiveDate::from_ymd_opt(year, m, 28).unwrap());
+    let term_jd_utc = find_solar_term_jd(lon, julian_day(approx_date));
+
+    // JST (+9時間) に変換
+    let term_jd_jst = term_jd_utc + 9.0 / 24.0;
+    let eq_date = jd_to_date(term_jd_jst);
+
+    // JSTでの「時刻 (0.0 〜 24.0)」を計算
+    // ユリウス日は正午(12:00)が整数となるため、+0.5 の端数から時刻を求める
+    let hours = (term_jd_jst + 0.5).rem_euclid(1.0) * 24.0;
+
+    // 春分・秋分当日の十干を求める
+    let jikkan = jikkan_of_date(eq_date);
+
+    // 戊(インデックス4) の日までの差分日数を計算 (-4 〜 +5)
+    let mut offset = (4 - jikkan).rem_euclid(10);
+    if offset > 5 {
+        offset -= 10; // -4, -3, -2, -1 のいずれかにする
+    } else if offset == 5 {
+        // 春分・秋分が「癸(9)」の日だった場合、前後5日がどちらも戊となる
+        // 【明治14年以後のルール】午前中なら前(-5日)、午後なら後(+5日)
+        if hours < 12.0 {
+            offset = -5;
+        } else {
+            offset = 5;
+        }
+    }
+
+    // 春分/秋分の日付にオフセットを加算して社日を返す
+    eq_date + chrono::Duration::days(offset)
+}
+
+// ─── 雑節 ────────────────────────────────────────────────────
+
+/// 指定した日付が雑節に該当するか判定し、該当する場合はその名称を返す。
+/// 毎日表示するものではないため Option で返す。
+pub fn zassetsu(date: NaiveDate) -> Option<&'static str> {
+    let y = date.year();
+
+    // 太陽黄経(lon)と概算月日を与えて、その年の正確なJST日付を算出するヘルパー
+    let get_term_date = |lon: f64, am: u32, ad: u32| -> NaiveDate {
+        let approx_date = NaiveDate::from_ymd_opt(y, am, ad)
+            .unwrap_or_else(|| NaiveDate::from_ymd_opt(y, am, 28).unwrap());
+        let approx_jd = julian_day(approx_date);
+        let term_jd = find_solar_term_jd(lon, approx_jd);
+        jd_to_date(term_jd + 9.0 / 24.0) // +9時間でJSTに変換
+    };
+
+    // 基準となる日の計算
+    let risshun = get_term_date(315.0, 2, 4);
+    let shunbun = get_term_date(0.0, 3, 21);
+    let shubun = get_term_date(180.0, 9, 23);
+
+    // 1. 節分 (立春の前日)
+    if date == risshun - chrono::Duration::days(1) {
+        return Some("節分");
+    }
+
+    // 2. 八十八夜 (立春を1日目として88日目 = +87日)
+    if date == risshun + chrono::Duration::days(87) {
+        return Some("八十八夜");
+    }
+
+    // 3. 二百十日 (立春を1日目として210日目 = +209日)
+    if date == risshun + chrono::Duration::days(209) {
+        return Some("二百十日");
+    }
+
+    // 4. 彼岸入り (春分・秋分の3日前。暦面では入りのみが示される)
+    if date == shunbun - chrono::Duration::days(3) || date == shubun - chrono::Duration::days(3) {
+        return Some("彼岸入り");
+    }
+
+    // 5. 土用入り (立春・立夏・立秋・立冬の直前。太陽黄経297°, 27°, 117°, 207°)
+    // ※ 冬の土用入り(297°)は1月なので、立春と同じ年の1月で計算可能
+    let doyo_w = get_term_date(297.0, 1, 17);
+    let doyo_sp = get_term_date(27.0, 4, 17);
+    let doyo_su = get_term_date(117.0, 7, 19);
+    let doyo_au = get_term_date(207.0, 10, 20);
+    if date == doyo_w || date == doyo_sp || date == doyo_su || date == doyo_au {
+        return Some("土用入り");
+    }
+
+    // 6. 入梅 (太陽黄経80°)
+    let nyubai = get_term_date(80.0, 6, 11);
+    if date == nyubai {
+        return Some("入梅");
+    }
+
+    // 7. 半夏生 (太陽黄経100°)
+    let hangesho = get_term_date(100.0, 7, 2);
+    if date == hangesho {
+        return Some("半夏生");
+    }
+
+    // 8. 社日 (春社・秋社)
+    let shunsha = calc_shanichi(y, true);
+    let shusha = calc_shanichi(y, false);
+    if date == shunsha || date == shusha {
+        return Some("社日");
+    }
+
+    None
+}
+
 // ─── テスト ──────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -537,5 +663,165 @@ mod tests {
         check_term(2026, 1, 1, "冬至");
         check_term(2026, 1, 4, "冬至");
         check_term(2026, 1, 5, "小寒");
+    }
+
+    // ── 雑節 ──────────────────────────────────────────────────
+    //
+    // 参照値は 国立天文台「暦要項」ベースの実際の雑節日 (2024〜2028年) と
+    // 照合済み (節分・入梅・半夏生・土用入り・彼岸入り・社日など、
+    // いずれも公表されている実日付と一致することを確認)。
+
+    // 節分 (立春の前日)
+    #[test]
+    fn test_zassetsu_setsubun() {
+        assert_eq!(zassetsu(d(2024, 2, 3)), Some("節分"));
+        // 2025年は124年ぶりに2/2が節分になった年 (立春が2/3のため)
+        assert_eq!(zassetsu(d(2025, 2, 2)), Some("節分"));
+        assert_eq!(zassetsu(d(2026, 2, 3)), Some("節分"));
+
+        // 前後の日は該当しない
+        assert_eq!(zassetsu(d(2026, 2, 2)), None);
+        assert_eq!(zassetsu(d(2026, 2, 4)), None); // 立春当日自体は雑節ではない
+    }
+
+    // 八十八夜 (立春から数えて88日目)
+    #[test]
+    fn test_zassetsu_hachijuhachiya() {
+        assert_eq!(zassetsu(d(2024, 5, 1)), Some("八十八夜"));
+        assert_eq!(zassetsu(d(2025, 5, 1)), Some("八十八夜"));
+        assert_eq!(zassetsu(d(2026, 5, 2)), Some("八十八夜"));
+
+        assert_eq!(zassetsu(d(2026, 5, 1)), None);
+        assert_eq!(zassetsu(d(2026, 5, 3)), None);
+    }
+
+    // 二百十日 (立春から数えて210日目)
+    #[test]
+    fn test_zassetsu_nihyakutoka() {
+        assert_eq!(zassetsu(d(2024, 8, 31)), Some("二百十日"));
+        assert_eq!(zassetsu(d(2025, 8, 31)), Some("二百十日"));
+        assert_eq!(zassetsu(d(2026, 9, 1)), Some("二百十日"));
+
+        assert_eq!(zassetsu(d(2026, 8, 31)), None);
+        assert_eq!(zassetsu(d(2026, 9, 2)), None);
+    }
+
+    // 彼岸入り (春分・秋分の3日前)
+    #[test]
+    fn test_zassetsu_higan_iri() {
+        // 春の彼岸入り
+        assert_eq!(zassetsu(d(2024, 3, 17)), Some("彼岸入り"));
+        assert_eq!(zassetsu(d(2025, 3, 17)), Some("彼岸入り"));
+        assert_eq!(zassetsu(d(2026, 3, 17)), Some("彼岸入り"));
+        assert_eq!(zassetsu(d(2027, 3, 18)), Some("彼岸入り"));
+
+        // 秋の彼岸入り
+        assert_eq!(zassetsu(d(2024, 9, 19)), Some("彼岸入り"));
+        assert_eq!(zassetsu(d(2025, 9, 20)), Some("彼岸入り"));
+        assert_eq!(zassetsu(d(2026, 9, 20)), Some("彼岸入り"));
+
+        // 前後の日は該当しない
+        assert_eq!(zassetsu(d(2026, 3, 16)), None);
+        assert_eq!(zassetsu(d(2026, 3, 18)), None);
+    }
+
+    // 土用入り (立春・立夏・立秋・立冬の直前、太陽黄経297°/27°/117°/207°)
+    #[test]
+    fn test_zassetsu_doyo_iri() {
+        // 2026年: 冬・春・夏・秋の四回
+        assert_eq!(zassetsu(d(2026, 1, 17)), Some("土用入り")); // 冬の土用
+        assert_eq!(zassetsu(d(2026, 4, 17)), Some("土用入り")); // 春の土用
+        assert_eq!(zassetsu(d(2026, 7, 20)), Some("土用入り")); // 夏の土用
+        assert_eq!(zassetsu(d(2026, 10, 20)), Some("土用入り")); // 秋の土用
+
+        // 他の年でもズレて正しく計算されること
+        assert_eq!(zassetsu(d(2025, 7, 19)), Some("土用入り"));
+        assert_eq!(zassetsu(d(2027, 10, 21)), Some("土用入り"));
+
+        // 前後の日は該当しない
+        assert_eq!(zassetsu(d(2026, 1, 16)), None);
+        assert_eq!(zassetsu(d(2026, 1, 18)), None);
+    }
+
+    // 入梅 (太陽黄経80°)
+    #[test]
+    fn test_zassetsu_nyubai() {
+        assert_eq!(zassetsu(d(2024, 6, 10)), Some("入梅"));
+        assert_eq!(zassetsu(d(2025, 6, 11)), Some("入梅"));
+        assert_eq!(zassetsu(d(2026, 6, 11)), Some("入梅"));
+
+        assert_eq!(zassetsu(d(2026, 6, 10)), None);
+        assert_eq!(zassetsu(d(2026, 6, 12)), None);
+    }
+
+    // 半夏生 (太陽黄経100°)
+    #[test]
+    fn test_zassetsu_hangesho() {
+        assert_eq!(zassetsu(d(2024, 7, 1)), Some("半夏生"));
+        assert_eq!(zassetsu(d(2025, 7, 1)), Some("半夏生"));
+        assert_eq!(zassetsu(d(2026, 7, 2)), Some("半夏生"));
+
+        assert_eq!(zassetsu(d(2026, 7, 1)), None);
+        assert_eq!(zassetsu(d(2026, 7, 3)), None);
+    }
+
+    // 社日 (春分・秋分に最も近い戊の日)
+    #[test]
+    fn test_zassetsu_shanichi() {
+        // 春社
+        assert_eq!(zassetsu(d(2024, 3, 25)), Some("社日"));
+        assert_eq!(zassetsu(d(2025, 3, 20)), Some("社日"));
+        assert_eq!(zassetsu(d(2026, 3, 25)), Some("社日"));
+
+        // 秋社
+        assert_eq!(zassetsu(d(2024, 9, 21)), Some("社日"));
+        assert_eq!(zassetsu(d(2025, 9, 26)), Some("社日"));
+        assert_eq!(zassetsu(d(2026, 9, 21)), Some("社日"));
+
+        // 前後の日(戊ではない日)は該当しない
+        assert_eq!(zassetsu(d(2026, 3, 24)), None);
+        assert_eq!(zassetsu(d(2026, 3, 26)), None);
+    }
+
+    // 雑節に該当しない、ごく普通の日は None を返すこと
+    #[test]
+    fn test_zassetsu_ordinary_day_returns_none() {
+        assert_eq!(zassetsu(d(2026, 1, 1)), None);
+        assert_eq!(zassetsu(d(2026, 6, 15)), None);
+        assert_eq!(zassetsu(d(2026, 8, 15)), None);
+        assert_eq!(zassetsu(d(2026, 12, 25)), None);
+    }
+
+    // 2026年全体を走査し、雑節に該当する日と名称の一覧が
+    // 期待通りであることを一括で確認する回帰テスト。
+    #[test]
+    fn test_zassetsu_2026_full_year_scan() {
+        let expected: [(NaiveDate, &str); 13] = [
+            (d(2026, 1, 17), "土用入り"),
+            (d(2026, 2, 3), "節分"),
+            (d(2026, 3, 17), "彼岸入り"),
+            (d(2026, 3, 25), "社日"),
+            (d(2026, 4, 17), "土用入り"),
+            (d(2026, 5, 2), "八十八夜"),
+            (d(2026, 6, 11), "入梅"),
+            (d(2026, 7, 2), "半夏生"),
+            (d(2026, 7, 20), "土用入り"),
+            (d(2026, 9, 1), "二百十日"),
+            (d(2026, 9, 20), "彼岸入り"),
+            (d(2026, 9, 21), "社日"),
+            (d(2026, 10, 20), "土用入り"),
+        ];
+
+        let mut actual: Vec<(NaiveDate, &str)> = Vec::new();
+        let mut day = d(2026, 1, 1);
+        let end = d(2026, 12, 31);
+        while day <= end {
+            if let Some(name) = zassetsu(day) {
+                actual.push((day, name));
+            }
+            day += chrono::Duration::days(1);
+        }
+
+        assert_eq!(actual, expected.to_vec());
     }
 }
