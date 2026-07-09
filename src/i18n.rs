@@ -243,6 +243,51 @@ pub fn eto_en(ja: &str) -> String {
     result
 }
 
+// ─── 祝日名 → 英語 ───────────────────────────────────────────
+
+/// 祝日名を英語表記にする。未知の名称はそのまま返す。
+pub fn holiday_en(ja: &str) -> String {
+    const HOLIDAY_MAP: &[(&str, &str)] = &[
+        ("四方節", "Shihosetsu (New Year's Day)"),
+        ("成人の日", "Coming of Age Day"),
+        ("紀元節", "National Foundation Day"),
+        ("天長節", "Emperor's Birthday"),
+        ("春季皇霊祭", "Vernal Equinox Day"),
+        ("昭和の日", "Showa Day"),
+        ("憲法記念日", "Constitution Memorial Day"),
+        ("みどりの日", "Greenery Day"),
+        ("こどもの日", "Children's Day"),
+        ("海の日", "Marine Day"),
+        ("山の日", "Mountain Day"),
+        ("敬老の日", "Respect for the Aged Day"),
+        ("秋季皇霊祭", "Autumnal Equinox Day"),
+        ("スポーツの日", "Sports Day"),
+        ("明治節", "Meiji Day"),
+        ("新嘗祭", "Niiname-sai (Harvest Festival)"),
+    ];
+
+    for &(ja_name, en_name) in HOLIDAY_MAP {
+        if ja_name == ja {
+            return en_name.to_string();
+        }
+    }
+    ja.to_string()
+}
+
+// ─── 日付 → 英語 (序数) ──────────────────────────────────────
+
+/// 日 (1〜31) を英語の序数表記にする (例: 9 → "9th", 21 → "21st")。
+pub fn ordinal_day_en(day: u32) -> String {
+    let suffix = match (day % 10, day % 100) {
+        (1, 11) | (2, 12) | (3, 13) => "th",
+        (1, _) => "st",
+        (2, _) => "nd",
+        (3, _) => "rd",
+        _ => "th",
+    };
+    format!("{day}{suffix}")
+}
+
 // ─── 固定テキスト ─────────────────────────────────────────────
 
 #[allow(dead_code)]
@@ -259,6 +304,8 @@ pub struct Texts {
     pub error_bad_lat: &'static str,
     pub error_bad_lon: &'static str,
     pub error_prefix: &'static str,
+    /// 名称のない休日 (振替休日など) を表示する際のラベル
+    pub holiday: &'static str,
 }
 
 pub const JA: Texts = Texts {
@@ -274,6 +321,7 @@ pub const JA: Texts = Texts {
     error_bad_lat: "緯度として解釈できません",
     error_bad_lon: "経度として解釈できません",
     error_prefix: "エラー",
+    holiday: "休日",
 };
 
 pub const EN: Texts = Texts {
@@ -289,6 +337,7 @@ pub const EN: Texts = Texts {
     error_bad_lat: "cannot parse latitude",
     error_bad_lon: "cannot parse longitude",
     error_prefix: "Error",
+    holiday: "Holiday",
 };
 
 pub fn texts(lang: Lang) -> &'static Texts {
@@ -348,6 +397,28 @@ mod tests {
         assert_eq!(eto_en("丙午"), "Hinoe-Uma");
         assert_eq!(eto_en("甲子"), "Kinoe-Ne");
         assert_eq!(eto_en("癸亥"), "Mizunoto-I");
+    }
+
+    #[test]
+    fn test_holiday_en() {
+        assert_eq!(holiday_en("海の日"), "Marine Day");
+        assert_eq!(holiday_en("こどもの日"), "Children's Day");
+        assert_eq!(holiday_en("謎の祝日"), "謎の祝日"); // 未知の名称はそのまま
+    }
+
+    #[test]
+    fn test_ordinal_day_en() {
+        assert_eq!(ordinal_day_en(1), "1st");
+        assert_eq!(ordinal_day_en(2), "2nd");
+        assert_eq!(ordinal_day_en(3), "3rd");
+        assert_eq!(ordinal_day_en(4), "4th");
+        assert_eq!(ordinal_day_en(11), "11th");
+        assert_eq!(ordinal_day_en(12), "12th");
+        assert_eq!(ordinal_day_en(13), "13th");
+        assert_eq!(ordinal_day_en(21), "21st");
+        assert_eq!(ordinal_day_en(22), "22nd");
+        assert_eq!(ordinal_day_en(23), "23rd");
+        assert_eq!(ordinal_day_en(31), "31st");
     }
 
     #[test]

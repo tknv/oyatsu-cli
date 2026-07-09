@@ -36,7 +36,30 @@ pub fn japanese_month_name(date: NaiveDate) -> &'static str {
     NAMES[(date.month() - 1) as usize]
 }
 
+// ─── 日付 (漢数字表記) ────────────────────────────────────────
+
+/// 日付の「日」を伝統的な漢数字表記にする (廿を用いる)。
+///
+/// 例: 2日→"二日", 10日→"十日", 13日→"十三日",
+///     20日→"廿日", 25日→"廿五日", 31日→"三十一日"
+pub fn kanji_day(date: NaiveDate) -> String {
+    const DIGITS: [&str; 10] = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+    let day = date.day();
+    let body = match day {
+        1..=9 => DIGITS[day as usize].to_string(),
+        10 => "十".to_string(),
+        11..=19 => format!("十{}", DIGITS[(day - 10) as usize]),
+        20 => "廿".to_string(),
+        21..=29 => format!("廿{}", DIGITS[(day - 20) as usize]),
+        30 => "三十".to_string(),
+        31 => "三十一".to_string(),
+        _ => day.to_string(),
+    };
+    format!("{body}日")
+}
+
 // ─── 二十四節気 (天文計算) ────────────────────────────────────
+
 
 /// 二十四節気の名称と対応する太陽視黄経 (λ☉, 度)。
 /// 小寒(λ=285°)を起点に15°刻み。
@@ -380,6 +403,23 @@ mod tests {
         assert_eq!(japanese_year(d(2019, 4, 30)), "平成三十一年");
         assert_eq!(japanese_year(d(2019, 5, 1)), "令和元年");
         assert_eq!(japanese_year(d(2026, 6, 22)), "令和八年");
+    }
+
+    // ── 日付 (漢数字) ─────────────────────────────────────────
+
+    #[test]
+    fn test_kanji_day() {
+        assert_eq!(kanji_day(d(2026, 1, 1)), "一日");
+        assert_eq!(kanji_day(d(2026, 1, 2)), "二日");
+        assert_eq!(kanji_day(d(2026, 1, 9)), "九日");
+        assert_eq!(kanji_day(d(2026, 1, 10)), "十日");
+        assert_eq!(kanji_day(d(2026, 1, 13)), "十三日");
+        assert_eq!(kanji_day(d(2026, 1, 19)), "十九日");
+        assert_eq!(kanji_day(d(2026, 1, 20)), "廿日");
+        assert_eq!(kanji_day(d(2026, 1, 25)), "廿五日");
+        assert_eq!(kanji_day(d(2026, 1, 29)), "廿九日");
+        assert_eq!(kanji_day(d(2026, 1, 30)), "三十日");
+        assert_eq!(kanji_day(d(2026, 1, 31)), "三十一日");
     }
 
     // ── 干支 ──────────────────────────────────────────────────
