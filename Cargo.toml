@@ -22,3 +22,24 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 strip = true
 lto = true
 opt-level = "z"
+
+# =========================================
+# Debian パッケージ (.deb) 向けの設定
+# =========================================
+[package.metadata.deb]
+assets = [
+    # [コピー元ファイル, インストール先ディレクトリ, パーミッション]
+    ["target/release/oyatsu", "usr/bin/", "755"],
+    ["oyatsu.1", "usr/share/man/man1/", "644"],
+    ["README.md", "usr/share/doc/oyatsu/README.md", "644"],
+]
+
+# =========================================
+# RPM パッケージ (.rpm) 向けの設定
+# =========================================
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/oyatsu", dest = "/usr/bin/oyatsu", mode = "755" },
+    { source = "oyatsu.1", dest = "/usr/share/man/man1/oyatsu.1", mode = "644" },
+    { source = "README.md", dest = "/usr/share/doc/oyatsu/README.md", doc = true, mode = "644" },
+]

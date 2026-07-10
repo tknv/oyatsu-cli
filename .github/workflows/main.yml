@@ -41,6 +41,89 @@ jobs:
           name: source-tarball
           path: ${{ env.ARCHIVE_PATH }}
 
+  # -------------------------------------------------------------
+  # 追加: Debian & RPM パッケージのビルド
+  # -------------------------------------------------------------
+  build-linux-packages:
+    name: Build Debian & RPM Packages
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-deb & cargo-generate-rpm
+        run: |
+          cargo install cargo-deb
+          cargo install cargo-generate-rpm
+
+      - name: Build Debian Package (.deb)
+        run: cargo deb
+
+      - name: Build RPM Package (.rpm)
+        run: |
+          cargo build --release
+          cargo generate-rpm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-deb-rpm
+          path: |
+            target/debian/*.deb
+            target/generate-rpm/*.rpm
+
+  # -------------------------------------------------------------
+  # 追加: Arch Linux パッケージのビルド
+  # -------------------------------------------------------------
+  build-arch-package:
+    name: Build Arch Linux Package
+    needs: test
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: pacman -Syu --noconfirm git rust
+
+      # Actionsのチェックアウトディレクトリの所有権を修正
+      - name: Fix workspace ownership
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Build Binary
+        run: cargo build --release
+
+      - name: Create PKGBUILD and Package (.pkg.tar.zst)
+        run: |
+          useradd -m builder
+          chown -R builder:builder .
+
+          # oyatsu 向け PKGBUILD の生成
+          cat << 'EOF' > PKGBUILD
+          pkgname=oyatsu
+          pkgver=${GITHUB_REF_NAME#v}
+          pkgrel=1
+          pkgdesc="Seasonal time system clock"
+          arch=('x86_64')
+          license=('GPL3')
+          url="https://github.com/tknv/oyatsu"
+
+          package() {
+            install -Dm755 "$srcdir/../../target/release/oyatsu" "$pkgdir/usr/bin/oyatsu"
+            install -Dm644 "$srcdir/../../oyatsu.1" "$pkgdir/usr/share/man/man1/oyatsu.1"
+            install -Dm644 "$srcdir/../../README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+          }
+          EOF
+
+          sed -i "s/\${GITHUB_REF_NAME#v}/${GITHUB_REF_NAME#v}/g" PKGBUILD
+          su builder -c "makepkg -cf"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-arch
+          path: ./*.pkg.tar.zst
+
   # 現在のコードでビルド可能な各アーキテクチャ向けバイナリをビルド
   build:
     name: Build (${{ matrix.target }})
@@ -91,35 +174,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
-
       - name: Install cross
         if: matrix.use_cross
         run: cargo install cross --git https://github.com/cross-rs/cross --locked
-
       - name: Build (cross)
         if: matrix.use_cross
         run: cross build --release --locked --target ${{ matrix.target }}
-
       - name: Build (cargo)
         if: ${{ !matrix.use_cross }}
         run: cargo build --release --locked --target ${{ matrix.target }}
-
       - name: Determine bin name
         id: bin
         shell: bash
         run: |
           NAME="$(grep -m1 '^name' Cargo.toml | sed -E 's/name *= *"(.*)"/\1/')"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
-
       - name: Package (Unix)
         if: runner.os != 'Windows'
         shell: bash
@@ -134,7 +210,6 @@ jobs:
           [ -f LICENSE ] && cp LICENSE "$STAGE/" || true
           tar -czf "${STAGE}.tar.gz" "$STAGE"
           echo "ASSET=${STAGE}.tar.gz" >> "$GITHUB_ENV"
-
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: bash
@@ -149,7 +224,6 @@ jobs:
           [ -f LICENSE ] && cp LICENSE "$STAGE/" || true
           7z a "${STAGE}.zip" "$STAGE"
           echo "ASSET=${STAGE}.zip" >> "$GITHUB_ENV"
-
       - uses: actions/upload-artifact@v4
         with:
           name: bin-${{ matrix.target }}
@@ -158,7 +232,8 @@ jobs:
   # 全てのアーティファクトを集約し GitHub Release を作成
   release:
     name: Create Release
-    needs: [build, source-archive]
+    # 依存関係にパッケージビルドジョブを追加
+    needs: [build, source-archive, build-linux-packages, build-arch-package]
     runs-on: ubuntu-latest
     permissions:
       contents: write
