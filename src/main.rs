@@ -1,4 +1,4 @@
-//! oyatsu — 和暦・和風月名・日付・和時計(不定時法)・二十四節気・干支を表示する CLI。
+//! oyatsu — 和暦・干支・和風月名・日付・日干支・和時計(不定時法)・二十四節気・雑節を表示する CLI。
 //!
 //! 元は Android ウィジェットアプリ Oyatsu (https://github.com/tknv/Oyatsu) の
 //! ロジックを Rust に移植したもの。
@@ -182,26 +182,34 @@ fn main() {
     let ja_term = koyomi::solar_term(today);
     let ja_zassetsu = koyomi::zassetsu(today);
     let ja_eto = koyomi::sixty_kanji_cycle(today);
+    let ja_day_eto = koyomi::day_kanji_cycle(today);
 
     // ── 日付・休日 ──
     let ja_day = koyomi::kanji_day(today);
     let holiday = holidays::lookup(today);
 
     // 月名の次に表示する「(イベント名) 日付」部分
-    let date_display_ja = match &holiday {
-        Some(holidays::Holiday::Named(name)) => format!("{name} {ja_day}"),
-        Some(holidays::Holiday::Unnamed) => format!("{} {ja_day}", i18n::texts(Lang::Ja).holiday),
-        None => ja_day.clone(),
+    let date_display_ja = {
+        let base = match &holiday {
+            Some(holidays::Holiday::Named(name)) => format!("{name} {ja_day}"),
+            Some(holidays::Holiday::Unnamed) => {
+                format!("{} {ja_day}", i18n::texts(Lang::Ja).holiday)
+            }
+            None => ja_day.clone(),
+        };
+        format!("{base}{ja_day_eto}")
     };
     let date_display_en = {
         let en_day = i18n::ordinal_day_en(today.day());
-        match &holiday {
+        let base = match &holiday {
             Some(holidays::Holiday::Named(name)) => format!("{} {en_day}", i18n::holiday_en(name)),
             Some(holidays::Holiday::Unnamed) => {
                 format!("{} {en_day}", i18n::texts(Lang::En).holiday)
             }
             None => en_day,
-        }
+        };
+        let day_eto_en = i18n::eto_en(&ja_day_eto);
+        format!("{base} {day_eto_en}")
     };
 
     // ── 日の出・日の入り ──
@@ -229,7 +237,7 @@ fn main() {
                     };
                     let zassetsu_str = ja_zassetsu.map(|z| format!(" [{z}]")).unwrap_or_default();
                     format!(
-                        "{prefix}{ja_year} {ja_month} {date_display_ja} {} {ja_term}{zassetsu_str} {ja_eto}",
+                        "{prefix}{ja_year}{ja_eto}歳 {ja_month} {date_display_ja} {} {ja_term}{zassetsu_str}",
                         jt.label
                     )
                 }
@@ -248,7 +256,7 @@ fn main() {
                         String::new()
                     };
                     format!(
-                        "{prefix}{era} {month} {date_display_en} {jikoku} {term}{zassetsu_str} {eto}"
+                        "{prefix}{era} ({eto}) {month} {date_display_en} {jikoku} {term}{zassetsu_str}"
                     )
                 }
             };
@@ -278,15 +286,15 @@ fn main() {
             // 日の出なし時は時刻なしで出力
             let output = match lang {
                 Lang::Ja => {
-                    format!("{ja_year} {ja_month} {date_display_ja} {ja_term} {ja_eto}")
+                    format!("{ja_year}{ja_eto}歳 {ja_month} {date_display_ja} {ja_term}")
                 }
                 Lang::En => format!(
-                    "{}  {}  {}  {}  {}",
+                    "{} ({})  {}  {}  {}",
                     i18n::era_en(&ja_year),
+                    i18n::eto_en(&ja_eto),
                     i18n::month_name_en(ja_month),
                     date_display_en,
                     i18n::solar_term_en(ja_term),
-                    i18n::eto_en(&ja_eto),
                 ),
             };
             println!("{output}");

@@ -264,6 +264,23 @@ pub fn sixty_kanji_cycle(date: NaiveDate) -> String {
     )
 }
 
+/// 指定した日の「日干支」(六十干支のうち、その日固有の組み合わせ)を返す。
+///
+/// jikkan_of_date() と同じユリウス日基準を用いる:
+/// 基準日 2000年1月1日 (JD=2451545) は「戊午」の日。
+/// 十干は (JD+9) mod 10、十二支は (JD+1) mod 12 で求める。
+pub fn day_kanji_cycle(date: NaiveDate) -> String {
+    const STEMS: [&str; 10] = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+    const BRANCHES: [&str; 12] = [
+        "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥",
+    ];
+    let jd_0h = julian_day(date);
+    let jd_12h = (jd_0h + 0.5).round() as i64;
+    let stem_idx = (jd_12h + 9).rem_euclid(10) as usize;
+    let branch_idx = (jd_12h + 1).rem_euclid(12) as usize;
+    format!("{}{}", STEMS[stem_idx], BRANCHES[branch_idx])
+}
+
 // ─── 和暦 ────────────────────────────────────────────────────
 
 fn to_kanji_number(num: i64) -> String {
@@ -555,6 +572,21 @@ mod tests {
         assert_eq!(sixty_kanji_cycle(d(1984, 1, 1)), "甲子");
         assert_eq!(sixty_kanji_cycle(d(2044, 1, 1)), "甲子");
         assert_eq!(sixty_kanji_cycle(d(2026, 1, 1)), "丙午");
+    }
+
+    // 日干支は、暦要項・こよみ計算サイト等で広く知られる基準日と照合する。
+    #[test]
+    fn test_day_kanji_cycle() {
+        // 1900-01-01 = 甲戌の日 (広く知られる基準値)
+        assert_eq!(day_kanji_cycle(d(1900, 1, 1)), "甲戌");
+        // 2000-01-01 = 戊午の日 (jikkan_of_date のコメントにある基準日と一致)
+        assert_eq!(day_kanji_cycle(d(2000, 1, 1)), "戊午");
+        assert_eq!(day_kanji_cycle(d(2024, 1, 1)), "甲子");
+        // 60日周期であること
+        assert_eq!(
+            day_kanji_cycle(d(2000, 1, 1)),
+            day_kanji_cycle(d(2000, 1, 1) + chrono::Duration::days(60))
+        );
     }
 
     // ── 和風月名 ──────────────────────────────────────────────

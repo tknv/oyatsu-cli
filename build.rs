@@ -41,17 +41,19 @@ A command-line tool for tracking snack time.
 .IP \(bu 2
 和暦 \- Japanese calendar
 .IP \(bu 2
+干支 \- Chinese zodiac signs (year)
+.IP \(bu 2
 和風月名 \- Japanese-style month names
 .IP \(bu 2
 日付 \- day
+.IP \(bu 2
+日干支 \- Chinese zodiac signs (day)
 .IP \(bu 2
 和時計時刻(不定時法) \- Japanese clock time (seasonal time)
 .IP \(bu 2
 二十四節気 \- 24 solar terms
 .IP \(bu 2
 雑節 \- Other season marks
-.IP \(bu 2
-干支 \- Chinese zodiac signs
 .IP \(bu 2
 おやつ時通知 \- Notice Oyatsu-doki
 .PP
