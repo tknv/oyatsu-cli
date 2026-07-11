@@ -110,9 +110,12 @@ jobs:
           url="https://github.com/tknv/oyatsu"
 
           package() {
-            install -Dm755 "$srcdir/../../target/release/oyatsu" "$pkgdir/usr/bin/oyatsu"
-            install -Dm644 "$srcdir/../../oyatsu.1" "$pkgdir/usr/share/man/man1/oyatsu.1"
-            install -Dm644 "$srcdir/../../README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+            # バイナリのインストール
+            install -Dm755 "$startdir/target/release/oyatsu" "$pkgdir/usr/bin/oyatsu"
+            # manページのインストール
+            install -Dm644 "$startdir/oyatsu.1" "$pkgdir/usr/share/man/man1/oyatsu.1"
+            # READMEのインストール
+            install -Dm644 "$startdir/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
           }
           EOF
 
