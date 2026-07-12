@@ -92,6 +92,18 @@ oyatsu   # -lat -lon なしで実行できる
 [GNU GPLv3 or later](http://www.gnu.org/licenses/gpl.html)
 (元プロジェクト [Oyatsu](https://github.com/tknv/Oyatsu) のライセンスを継承)
 
+## ## クレジット・参照
+
+###  国立天文台 (NAOJ)
+
+[暦計算室](https://eco.mtk.nao.ac.jp/koyomi/) 
+
+#### テストデータ 
+
+テストデータの一部は NAOJ の公開データを利用している
+
+## 付録
+
 ### おやつ
 
 © [Wikipedia, CC BY-SA 4.0](https://ja.wikipedia.org/wiki/%E3%81%8A%E3%82%84%E3%81%A4)  
