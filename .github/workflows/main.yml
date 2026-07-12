@@ -41,93 +41,7 @@ jobs:
           name: source-tarball
           path: ${{ env.ARCHIVE_PATH }}
 
-  # -------------------------------------------------------------
-  # 追加: Debian & RPM パッケージのビルド
-  # -------------------------------------------------------------
-  build-linux-packages:
-    name: Build Debian & RPM Packages
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-deb & cargo-generate-rpm
-        run: |
-          cargo install cargo-deb
-          cargo install cargo-generate-rpm
-
-      - name: Build Debian Package (.deb)
-        run: cargo deb
-
-      - name: Build RPM Package (.rpm)
-        run: |
-          cargo build --release
-          cargo generate-rpm
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: packages-deb-rpm
-          path: |
-            target/debian/*.deb
-            target/generate-rpm/*.rpm
-
-  # -------------------------------------------------------------
-  # 追加: Arch Linux パッケージのビルド
-  # -------------------------------------------------------------
-  build-arch-package:
-    name: Build Arch Linux Package
-    needs: test
-    runs-on: ubuntu-latest
-    container: archlinux:base-devel
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        run: pacman -Syu --noconfirm git rust
-
-      # Actionsのチェックアウトディレクトリの所有権を修正
-      - name: Fix workspace ownership
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - name: Build Binary
-        run: cargo build --release
-
-      - name: Create PKGBUILD and Package (.pkg.tar.zst)
-        run: |
-          useradd -m builder
-          chown -R builder:builder .
-
-          # oyatsu 向け PKGBUILD の生成
-          cat << 'EOF' > PKGBUILD
-          pkgname=oyatsu
-          pkgver=${GITHUB_REF_NAME#v}
-          pkgrel=1
-          pkgdesc="Seasonal time system clock"
-          arch=('x86_64')
-          license=('GPL3')
-          url="https://github.com/tknv/oyatsu"
-
-          package() {
-            # バイナリのインストール
-            install -Dm755 "$startdir/target/release/oyatsu" "$pkgdir/usr/bin/oyatsu"
-            # manページのインストール
-            install -Dm644 "$startdir/oyatsu.1" "$pkgdir/usr/share/man/man1/oyatsu.1"
-            # READMEのインストール
-            install -Dm644 "$startdir/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
-          }
-          EOF
-
-          sed -i "s/\${GITHUB_REF_NAME#v}/${GITHUB_REF_NAME#v}/g" PKGBUILD
-          su builder -c "makepkg -cf"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: package-arch
-          path: ./*.pkg.tar.zst
-
-  # 現在のコードでビルド可能な各アーキテクチャ向けバイナリをビルド
+  # 通常のバイナリパッケージ (.tar.gz / .zip) をビルド
   build:
     name: Build (${{ matrix.target }})
     needs: test
@@ -232,11 +146,106 @@ jobs:
           name: bin-${{ matrix.target }}
           path: ${{ env.ASSET }}
 
+  # Debian (.deb) & RPM (.rpm) パッケージの生成ジョブ
+  build-linux-packages:
+    name: Build Debian & RPM Packages
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-deb & cargo-generate-rpm
+        run: |
+          cargo install cargo-deb
+          cargo install cargo-generate-rpm
+
+      # 事前にreleaseビルドを行い、build.rsによるmanページ(oyatsu.1)生成を確定させる
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Build Debian Package (.deb)
+        run: cargo deb --no-build
+
+      - name: Build RPM Package (.rpm)
+        run: cargo generate-rpm
+
+      # 生成されたパッケージを探索して集約
+      - name: Collect packages
+        run: |
+          mkdir -p dist-packages
+          find target -name "*.deb" -exec cp {} dist-packages/ \;
+          find . -name "*.rpm" -exec cp {} dist-packages/ \;
+          echo "--- Collected Packages ---"
+          ls -l dist-packages
+
+      # ファイルがなければエラー落ちさせて隠れ失敗を防ぐ
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-deb-rpm
+          path: dist-packages/*
+          if-no-files-found: error
+
+  # Arch Linux (.pkg.tar.zst) パッケージの生成ジョブ
+  build-arch-package:
+    name: Build Arch Linux Package
+    needs: test
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install system dependencies
+        run: |
+          pacman -Syu --noconfirm base-devel git rust
+      
+      - uses: actions/checkout@v4
+
+      # 事前にビルドしてバイナリとmanページをルート配下に生成しておく
+      - name: Build release binary & man page
+        run: cargo build --release
+
+      - name: Create PKGBUILD and Package (.pkg.tar.zst)
+        run: |
+          useradd -m builder
+          chown -R builder:builder .
+          
+          cat << 'EOF' > PKGBUILD
+          pkgname=oyatsu
+          pkgver=${GITHUB_REF_NAME#v}
+          pkgrel=1
+          pkgdesc="Seasonal time system clock"
+          arch=('x86_64')
+          license=('GPL3')
+          url="https://github.com/tknv/oyatsu"
+          
+          package() {
+            # $startdir を使用して事前に生成されたアセットを正確に配置
+            install -Dm755 "$startdir/target/release/oyatsu" "$pkgdir/usr/bin/oyatsu"
+            install -Dm644 "$startdir/oyatsu.1" "$pkgdir/usr/share/man/man1/oyatsu.1"
+            install -Dm644 "$startdir/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+          }
+          EOF
+          
+          sed -i "s/\${GITHUB_REF_NAME#v}/${GITHUB_REF_NAME#v}/g" PKGBUILD
+          su builder -c "makepkg -cf"
+
+      - name: Collect Arch package
+        run: |
+          mkdir -p dist-arch
+          find . -name "*.pkg.tar.zst" -exec cp {} dist-arch/ \;
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-arch
+          path: dist-arch/*
+          if-no-files-found: error
+
   # 全てのアーティファクトを集約し GitHub Release を作成
   release:
     name: Create Release
-    # 依存関係にパッケージビルドジョブを追加
-    needs: [build, source-archive, build-linux-packages, build-arch-package]
+    # 修正箇所: 新設したパッケージジョブの完了も待つように変更
+    needs: [build, source-archive, build-arch-package, build-linux-packages]
     runs-on: ubuntu-latest
     permissions:
       contents: write
