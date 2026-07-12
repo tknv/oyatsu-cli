@@ -57,6 +57,10 @@ A command-line tool for tracking snack time.
 .IP \(bu 2
 おやつ時通知 \- Notice Oyatsu-doki
 .PP
+Sunrise and sunset times, as well as new and full moon dates, are displayed as supplementary information on the standard error output.
+.PP
+日の出・日の入り時刻、朔望は標準エラー出力に補足として表示されます。
+.PP
 During the \(oqHitsuji\(cq hour (the eighth hour, roughly 13:00\(en15:00 in modern terms), the word \(oqOyatsu(snack)\(cq is displayed at the beginning of the output.
 .PP
 おやつの時間を把握する為のコマンドラインツール。

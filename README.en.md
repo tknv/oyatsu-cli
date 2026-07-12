@@ -32,18 +32,18 @@ oyatsu
 ```
 
 ```
-Reiwa 8 (Hinoe-Uma) Fumizuki (Jul) 12th Hinoto-I Ne Futatsu Minor Heat
-(Sunrise 07:12, Sunset 19:37)
+Reiwa 8 (Hinoe-Uma) Uzuki (Apr) 17th Kanoto-Tori Mi Futatsu Clear and Bright [Start of Doyo]
+(Sunrise 04:06, Sunset 17:15, Tonight: New Moon)
 ```
 
 During snack time (Hour of the Goat):
 
 ```
 Oyatsu (snack time!) Reiwa 8 (Hinoe-Uma) Uzuki (Apr) 17th Kanoto-Tori Hitsuji Mitsu Clear and Bright [Start of Doyo]
-(Sunrise 04:06, Sunset 17:15)
+(Sunrise 04:06, Sunset 17:15, Tonight: New Moon)
 ```
 
-Sunrise and sunset times are displayed as supplementary information in the standard error output (stderr).
+Sunrise, sunset times and syzygy are displayed as supplementary information in the standard error output (stderr).
 
 ```sh
 oyatsu 2&> /dev/null   # Hide supplementary information
@@ -108,6 +108,13 @@ Some test data included in this repository is derived from publicly available da
 ### Temporal Hour System (Futei-jiho)
 
 © [National Astronomical Observatory of Japan](https://eco.mtk.nao.ac.jp/koyomi/wiki/BBFEB9EF2FC4EABBFECBA1A4C8C9D4C4EABBFECBA1.html)
+
+### Astronomical Calculations (Sunrise/Sunset, 24 Solar Terms)
+
+Astronomical calculations in this project are based on algorithms described in: 
+- Jean Meeus, Astronomical Algorithms, 2nd Edition, Willmann-Bell, Inc., 1998.  
+
+The implementation is an independent implementation of the described astronomical algorithms and does not include source code from the book.
 
 ### Traditional Japanese Month Names (Wafūgetsu-mei)
 
