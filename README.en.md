@@ -90,6 +90,17 @@ If only one of `-lat` or `-lon` is specified, the missing value is supplemented 
 
 (Inherited from the original project, [Oyatsu](https://github.com/tknv/Oyatsu))
 
+## Credits & References
+
+### National Astronomical Observatory of Japan
+
+[Ephemeris Computation Office](https://eco.mtk.nao.ac.jp/koyomi/index.html.en)　
+
+#### Test Data
+Some test data included in this repository is derived from publicly available data published by the National Astronomical Observatory of Japan (NAOJ).
+
+## Appendix
+
 ### Oyatsu (Snack)
 
 © [Wikipedia, CC BY-SA 4.0](https://ja.wikipedia.org/wiki/%E3%81%8A%E3%82%84%E3%81%A4)

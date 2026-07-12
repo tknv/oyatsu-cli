@@ -7,6 +7,7 @@ mod config;
 mod holidays;
 mod i18n;
 mod koyomi;
+mod moonface;
 mod sunrise;
 
 use chrono::Datelike;
@@ -227,6 +228,12 @@ fn main() {
         (Some(sr), Some(ss)) => {
             let jt = koyomi::calculate_japanese_time(now, sr, ss);
 
+            // ── 次に来る朔望 (朔・上弦・望・下弦) ──
+            let moon_msg = match lang {
+                Lang::Ja => moonface::describe_ja(now, today),
+                Lang::En => moonface::describe_en(now, today),
+            };
+
             // ── 言語別出力 ──
             let output = match lang {
                 Lang::Ja => {
@@ -265,18 +272,20 @@ fn main() {
             // 補足情報 (stderr)
             let sun_info = match lang {
                 Lang::Ja => format!(
-                    "({}{}-{}{})",
+                    "({}{}-{}{} {})",
                     txt.sunrise_label,
                     sr.format("%H:%M"),
                     txt.sunset_label,
                     ss.format("%H:%M"),
+                    moon_msg,
                 ),
                 Lang::En => format!(
-                    "({} {}, {} {})",
+                    "({} {}, {} {}, {})",
                     txt.sunrise_label,
                     sr.format("%H:%M"),
                     txt.sunset_label,
                     ss.format("%H:%M"),
+                    moon_msg,
                 ),
             };
             eprintln!("{sun_info}");

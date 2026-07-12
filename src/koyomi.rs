@@ -38,24 +38,32 @@ pub fn japanese_month_name(date: NaiveDate) -> &'static str {
 
 // ─── 日付 (漢数字表記) ────────────────────────────────────────
 
+/// 数値を伝統的な漢数字表記にする (廿を用いる)。
+///
+/// 例: 2→"二", 10→"十", 13→"十三", 20→"廿", 25→"廿五", 31→"三十一"
+///
+/// 1〜39 程度を想定 (「日」の日付表記や、朔望までの日数表示に使う)。
+/// 範囲外の値はアラビア数字のまま返す。
+pub fn kanji_number(n: u32) -> String {
+    const DIGITS: [&str; 10] = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+    match n {
+        1..=9 => DIGITS[n as usize].to_string(),
+        10 => "十".to_string(),
+        11..=19 => format!("十{}", DIGITS[(n - 10) as usize]),
+        20 => "廿".to_string(),
+        21..=29 => format!("廿{}", DIGITS[(n - 20) as usize]),
+        30 => "三十".to_string(),
+        31..=39 => format!("三十{}", DIGITS[(n - 30) as usize]),
+        _ => n.to_string(),
+    }
+}
+
 /// 日付の「日」を伝統的な漢数字表記にする (廿を用いる)。
 ///
 /// 例: 2日→"二日", 10日→"十日", 13日→"十三日",
 ///     20日→"廿日", 25日→"廿五日", 31日→"三十一日"
 pub fn kanji_day(date: NaiveDate) -> String {
-    const DIGITS: [&str; 10] = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
-    let day = date.day();
-    let body = match day {
-        1..=9 => DIGITS[day as usize].to_string(),
-        10 => "十".to_string(),
-        11..=19 => format!("十{}", DIGITS[(day - 10) as usize]),
-        20 => "廿".to_string(),
-        21..=29 => format!("廿{}", DIGITS[(day - 20) as usize]),
-        30 => "三十".to_string(),
-        31 => "三十一".to_string(),
-        _ => day.to_string(),
-    };
-    format!("{body}日")
+    format!("{}日", kanji_number(date.day()))
 }
 
 // ─── 二十四節気 (天文計算) ────────────────────────────────────
@@ -551,6 +559,18 @@ mod tests {
     // ── 日付 (漢数字) ─────────────────────────────────────────
 
     #[test]
+    fn test_kanji_number() {
+        assert_eq!(kanji_number(1), "一");
+        assert_eq!(kanji_number(3), "三");
+        assert_eq!(kanji_number(10), "十");
+        assert_eq!(kanji_number(12), "十二");
+        assert_eq!(kanji_number(20), "廿");
+        assert_eq!(kanji_number(25), "廿五");
+        assert_eq!(kanji_number(30), "三十");
+        assert_eq!(kanji_number(31), "三十一");
+    }
+
+    #[test]
     fn test_kanji_day() {
         assert_eq!(kanji_day(d(2026, 1, 1)), "一日");
         assert_eq!(kanji_day(d(2026, 1, 2)), "二日");
@@ -855,5 +875,115 @@ mod tests {
         }
 
         assert_eq!(actual, expected.to_vec());
+    }
+
+    // ── 朔望 (moonface) — 国立天文台「暦要項」2026年データとの照合 ──
+    // 参照データは国立天文台「暦要項」2026年（令和8年）の公表値を使用。
+    // Copyright (c) NAOJ
+    //       標準時 = UT+9h (JST), ΔT = 69s
+    // moonface::next_phase() が返す瞬時が公表値と十分近いこと(数分以内)、
+    // および該当する暦日(JST)が完全に一致することを検証する。
+    //
+    // moonface::next_phase() は DateTime<Local> を受け取るが、ホストの
+    // タイムゾーン設定に依存させないため、公表時刻(JST)を一旦 UTC の
+    // 絶対時刻に変換してから Local に変換して渡す (sunrise.rs のテストと
+    // 同じ考え方)。
+    #[test]
+    fn test_moon_phases_against_naoj_2026() {
+        use crate::moonface::{self, MoonPhase};
+        use chrono::{TimeZone, Utc};
+
+        // (year, month, day, hour, minute, phase) — 全て JST (標準時)
+        const REFERENCE: &[(i32, u32, u32, u32, u32, MoonPhase)] = &[
+            (2026, 1, 3, 19, 3, MoonPhase::Full),
+            (2026, 1, 11, 0, 48, MoonPhase::LastQuarter),
+            (2026, 1, 19, 4, 52, MoonPhase::New),
+            (2026, 1, 26, 13, 47, MoonPhase::FirstQuarter),
+            (2026, 2, 2, 7, 9, MoonPhase::Full),
+            (2026, 2, 9, 21, 43, MoonPhase::LastQuarter),
+            (2026, 2, 17, 21, 1, MoonPhase::New),
+            (2026, 2, 24, 21, 28, MoonPhase::FirstQuarter),
+            (2026, 3, 3, 20, 38, MoonPhase::Full),
+            (2026, 3, 11, 18, 39, MoonPhase::LastQuarter),
+            (2026, 3, 19, 10, 23, MoonPhase::New),
+            (2026, 3, 26, 4, 18, MoonPhase::FirstQuarter),
+            (2026, 4, 2, 11, 12, MoonPhase::Full),
+            (2026, 4, 10, 13, 52, MoonPhase::LastQuarter),
+            (2026, 4, 17, 20, 52, MoonPhase::New),
+            (2026, 4, 24, 11, 32, MoonPhase::FirstQuarter),
+            (2026, 5, 2, 2, 23, MoonPhase::Full),
+            (2026, 5, 10, 6, 10, MoonPhase::LastQuarter),
+            (2026, 5, 17, 5, 1, MoonPhase::New),
+            (2026, 5, 23, 20, 11, MoonPhase::FirstQuarter),
+            (2026, 5, 31, 17, 45, MoonPhase::Full),
+            (2026, 6, 8, 19, 1, MoonPhase::LastQuarter),
+            (2026, 6, 15, 11, 54, MoonPhase::New),
+            (2026, 6, 22, 6, 55, MoonPhase::FirstQuarter),
+            (2026, 6, 30, 8, 57, MoonPhase::Full),
+            (2026, 7, 8, 4, 29, MoonPhase::LastQuarter),
+            (2026, 7, 14, 18, 44, MoonPhase::New),
+            (2026, 7, 21, 20, 6, MoonPhase::FirstQuarter),
+            (2026, 7, 29, 23, 36, MoonPhase::Full),
+            (2026, 8, 6, 11, 21, MoonPhase::LastQuarter),
+            (2026, 8, 13, 2, 37, MoonPhase::New),
+            (2026, 8, 20, 11, 46, MoonPhase::FirstQuarter),
+            (2026, 8, 28, 13, 19, MoonPhase::Full),
+            (2026, 9, 4, 16, 51, MoonPhase::LastQuarter),
+            (2026, 9, 11, 12, 27, MoonPhase::New),
+            (2026, 9, 19, 5, 44, MoonPhase::FirstQuarter),
+            (2026, 9, 27, 1, 49, MoonPhase::Full),
+            (2026, 10, 3, 22, 25, MoonPhase::LastQuarter),
+            (2026, 10, 11, 0, 50, MoonPhase::New),
+            (2026, 10, 19, 1, 13, MoonPhase::FirstQuarter),
+            (2026, 10, 26, 13, 12, MoonPhase::Full),
+            (2026, 11, 2, 5, 28, MoonPhase::LastQuarter),
+            (2026, 11, 9, 16, 2, MoonPhase::New),
+            (2026, 11, 17, 20, 48, MoonPhase::FirstQuarter),
+            (2026, 11, 24, 23, 54, MoonPhase::Full),
+            (2026, 12, 1, 15, 9, MoonPhase::LastQuarter),
+            (2026, 12, 9, 9, 52, MoonPhase::New),
+            (2026, 12, 17, 14, 43, MoonPhase::FirstQuarter),
+            (2026, 12, 24, 10, 28, MoonPhase::Full),
+            (2026, 12, 31, 3, 59, MoonPhase::LastQuarter),
+        ];
+
+        // JST (標準時) の日時 → UTC の絶対時刻
+        fn jst_to_utc(y: i32, m: u32, d: u32, h: u32, mi: u32) -> DateTime<Utc> {
+            Utc.with_ymd_and_hms(y, m, d, h, mi, 0).unwrap() - chrono::Duration::hours(9)
+        }
+
+        for &(y, m, d, h, mi, expected_phase) in REFERENCE {
+            let expected_utc = jst_to_utc(y, m, d, h, mi);
+
+            // 探索開始点は公表時刻の1時間前。絶対時刻から Local に変換して
+            // 渡すことで、ホストのタイムゾーン設定に依らずテストできる。
+            let after = (expected_utc - chrono::Duration::hours(1)).with_timezone(&Local);
+            let ev = moonface::next_phase(after);
+
+            assert_eq!(
+                ev.phase, expected_phase,
+                "{y}/{m:02}/{d:02} {h:02}:{mi:02} JST の朔望種別が一致しない (got {:?})",
+                ev.phase
+            );
+
+            // 暦日(JST)が完全に一致すること — アプリの表示精度として必須の条件
+            let got_jst = ev.datetime.with_timezone(&Utc) + chrono::Duration::hours(9);
+            assert_eq!(
+                (got_jst.year(), got_jst.month(), got_jst.day()),
+                (y, m, d),
+                "{y}/{m:02}/{d:02} {h:02}:{mi:02} JST の日付が一致しない (got {got_jst} UTC)"
+            );
+
+            // 時刻についても国立天文台公表値との差が10分以内であること
+            let diff_min = (ev.datetime.with_timezone(&Utc) - expected_utc)
+                .num_seconds()
+                .abs() as f64
+                / 60.0;
+            assert!(
+                diff_min <= 10.0,
+                "{y}/{m:02}/{d:02} {h:02}:{mi:02} JST との時刻差が大きすぎる ({diff_min:.1}分, got {} UTC)",
+                ev.datetime.with_timezone(&Utc)
+            );
+        }
     }
 }
