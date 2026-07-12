@@ -92,7 +92,7 @@ oyatsu   # -lat -lon なしで実行できる
 [GNU GPLv3 or later](http://www.gnu.org/licenses/gpl.html)
 (元プロジェクト [Oyatsu](https://github.com/tknv/Oyatsu) のライセンスを継承)
 
-## ## クレジット・参照
+## クレジット・参照
 
 ###  国立天文台 (NAOJ)
 
@@ -100,7 +100,7 @@ oyatsu   # -lat -lon なしで実行できる
 
 #### テストデータ 
 
-テストデータの一部は NAOJ の公開データを利用している
+テストデータの一部は NAOJ の公開データを利用しています。
 
 ## 付録
 
