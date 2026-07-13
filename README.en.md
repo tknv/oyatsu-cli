@@ -4,7 +4,8 @@
 
 A command-line tool, porting the logic of [Oyatsu (Android Version)](https://github.com/tknv/Oyatsu) to help keep track of "oyatsu" (snack) time.
 
-It displays the Japanese calendar year (Wareki), the sexagenary cycle (Eto) year, traditional Japanese month names (Wafūgetsu-mei), day, the sexagenary cycle (Hinoeto) day, traditional Japanese time (seasonal time clock) / Futei-jiho), the 24 solar terms (Nijūshi-sekki) and other season makrs (Zassetsu)  in your terminal.
+It displays the Japanese calendar year (Wareki), the sexagenary cycle (Eto) year, traditional Japanese month names (Wafūgetsu-mei), day, the sexagenary cycle (Hinoeto) day, traditional Japanese time (seasonal time clock) / Futei-jiho), the 24 solar terms (Nijūshi-sekki) and other season makrs (Zassetsu)  in your terminal.　Additional information (stderr) displays details regarding sunrise, sunset, and syzygy.　
+
 During the hour of the "Goat" (Hitsuji-no-koku, or Yatsu-doki, which is roughly 13:00 to 15:00 in modern time), the word "おやつ" (Oyatsu) will be prefixed to the output.
 
 ## Build
@@ -125,13 +126,26 @@ Source: National Diet Library "The Calendar, History and Lore" [https://www.ndl.
 Source: Ministry of Agriculture, Forestry and Fisheries Website [MAFF Our Regional Cuisines: Kushi-dango, Tokyo](https://www.maff.go.jp/j/keikaku/syokubunka/k_ryouri/search_menu/menu/34_29_tokyo.html#:~:text=%E5%9B%A3%E5%AD%90%E3%81%AF%E5%B9%B3%E5%AE%89%E6%99%82%E4%BB%A3%E3%81%AB,%E5%A3%B2%E3%82%8B%E5%BA%97%E3%82%82%E3%81%A7%E3%81%8D%E3%81%9F%E3%80%82)
 
 > Skewer dango (Kushi-dango) with five dumplings on a single stick became so popular that it inspired the saying "Hana yori Dango" (dumplings over flowers) and spread nationwide, originating from Kyoto.
-> In Tokyo during the Edo period, the five-dumpling skewer was also the mainstream and was sold for 5 mon coins per stick. However, after the 4 mon coin began circulating, some customers took advantage of the crowded shops by leaving a 4 mon coin and taking the 5-dumpling skewer illegally. Troubled by this, shop owners came up with a desperate measure: they reduced the number of dumplings to four per stick. This is recorded as the origin of the 4-dumpling skewer. Even today, skewer dango is predominantly **four per stick in Kanto (Eastern Japan)** and **five per stick in Kansai (Western Japan)**.
+> In Tokyo during the Edo period, the five-dumpling skewer was also the mainstream and was sold for 5 mon coins per stick. However, after the 4 mon coin began circulating, some customers took advantage of the crowded shops by leaving a 4 mon coin and taking the 5-dumpling skewer illegally. Troubled by this, shop owners came up with a desperate measure: they reduced the number of dumplings to four per stick. This is recorded as the origin of the 4-dumpling skewer. Even today, skewer dango is predominantly **four per stick in Kanto (Eastern Japan)** and **five per stick in Kansai (Western Japan)**.  
 
-Copyright (C) [2026]
+Copyright (C) [2026]  
+This work incorporates AI-assisted. 
 
-This work incorporates AI-assisted.
+### Oyatsu widget app for Android 
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+Free, no ads. 
+
+- You can download it from [F-Droid](https://f-droid.org/packages/lab.rredd.oyatsu/).  
+
+<a href="https://f-droid.org/packages/lab.rreedd.oyatsu/" target="_blank">
+	<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80"/>
+</a>   
+
+- Download from [release page](https://github.com/tknv/oyatsu/releases) then install    
+
+## This program is free software:
+
+you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
