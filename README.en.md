@@ -85,6 +85,17 @@ If only one of `-lat` or `-lon` is specified, the missing value is supplemented 
 * Can run without `-lat`/`-lon` if latitude/longitude are set in `~/.config/oyatsu`
 * Can run via `oyatsu -lat <latitude> -lon <longitude>` even if `~/.config/oyatsu` does not exist
 
+### At tmux
+
+![tmux status bar](img/tmux.png)  
+
+Update date and clock by 900 sec.  
+`#(oyatsu 2>/dev/null; sleep 900)`   
+
+```bash
+tmux_conf_theme_status_right='#{prefix}#{mouse}#{pairing}#{synchronized} #(oyatsu 2>/dev/null; sleep 900), #{?battery_status, #{battery_status},}#{?battery_bar, #{battery_bar},}#{?battery_percentage, #{battery_percentage},} , %R , %d %b | #{username}#{root} | #{hostname} '
+``` 
+
 ## License
 
 [GNU GPLv3 or later](http://www.gnu.org/licenses/gpl.html)

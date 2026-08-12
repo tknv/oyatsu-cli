@@ -88,6 +88,17 @@ oyatsu   # -lat -lon なしで実行できる
 - `~/.config/oyatsu` に緯度・経度があれば `-lat`/`-lon` なしでも実行可能
 - `~/.config/oyatsu` がなくても `oyatsu -lat 緯度 -lon 経度` で実行可能
 
+### tmuxで
+
+![tmux status bar](img/tmux.png)  
+
+日付和時刻を900秒で更新 
+`#(oyatsu 2>/dev/null; sleep 900)`  
+
+```bash
+tmux_conf_theme_status_right='#{prefix}#{mouse}#{pairing}#{synchronized} #(oyatsu 2>/dev/null; sleep 900), #{?battery_status, #{battery_status},}#{?battery_bar, #{battery_bar},}#{?battery_percentage, #{battery_percentage},} , %R , %d %b | #{username}#{root} | #{hostname} '
+``` 
+
 ## ライセンス
 
 [GNU GPLv3 or later](http://www.gnu.org/licenses/gpl.html)
